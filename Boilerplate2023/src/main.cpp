@@ -13,8 +13,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1024;
+const unsigned int SCR_HEIGHT = 1024;
 
 int PYRAMID = 0;
 glm::vec3 shift, cameraPos, cameraTarget,
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
     rotation1 = glm::mat4(1.0f);
     rotation = glm::mat4(1.0f);
     glm::mat4 projection;
-    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
     unsigned int VBO_Prism, VBO_Pyramid, EBO_Prism, EBO_Pyramid, VAO_Prism, VAO_Pyramid;
     shapePrism.initBuffers(&VAO_Prism, &VBO_Prism, &EBO_Prism);
@@ -152,9 +152,7 @@ int main(int argc, char **argv)
     //  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // render loop
     // -----------
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    glEnable(GL_DEPTH_TEST);
 
     cameraPos = glm::vec3(0, 0, 3.0f);
     cameraTarget = glm::vec3(0, 0, 0);
@@ -168,7 +166,7 @@ int main(int argc, char **argv)
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // draw our first triangle
         glUseProgram(shaderProgram);
