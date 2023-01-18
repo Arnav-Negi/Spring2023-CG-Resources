@@ -17,17 +17,22 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 int PYRAMID = 0;
+glm::vec3 shift, cameraPos, cameraTarget,
+    cameraDirection, cameraUp, cameraRight;
+glm::mat4 rotation1, rotation;
 
 Prism shapePrism(3);
 Pyramid shapePyramid(3);
 
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 aPos;\n"
-                                 "uniform mat4 transform, view, projection;\n"
+                                 "uniform mat4 transform;\n"
+                                 "uniform mat4 view;\n"
+                                 "uniform mat4 projection;\n"
                                  "out vec4 color;\n"
                                  "void main()\n"
                                  "{\n"
-                                 "   gl_Position = projection  * transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+                                 "   gl_Position = projection * view * transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
                                  "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
                                    "out vec4 FragColor;\n"
@@ -69,6 +74,8 @@ int main(int argc, char **argv)
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+
 
     // build and compile our shader program
     // ------------------------------------
@@ -132,6 +139,11 @@ int main(int argc, char **argv)
 
     shapePrism = Prism((unsigned int)nsides);
     shapePyramid = Pyramid((unsigned int)nsides);
+    shift = glm::vec3(0, 0, 0);
+    rotation1 = glm::mat4(1.0f);
+    rotation = glm::mat4(1.0f);
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
 
     unsigned int VBO_Prism, VBO_Pyramid, EBO_Prism, EBO_Pyramid, VAO_Prism, VAO_Pyramid;
     shapePrism.initBuffers(&VAO_Prism, &VBO_Prism, &EBO_Prism);
@@ -143,6 +155,9 @@ int main(int argc, char **argv)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+
+    cameraPos = glm::vec3(0, 0, 3.0f);
+    cameraTarget = glm::vec3(0, 0, 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -157,9 +172,25 @@ int main(int argc, char **argv)
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
+
+        // handle camera vars
+        cameraDirection = glm::normalize(cameraPos - cameraTarget);
+        cameraRight = glm::normalize(glm::cross(glm::vec3(0, 1.0, 0), cameraDirection));
+        cameraUp = glm::cross(cameraDirection, cameraRight);
+
+        glm::mat4 view;
+        view = glm::lookAt(cameraPos, cameraTarget, glm::vec3(0, 1.0, 0));
+
+        glm::mat4 trans = glm::mat4(1.0);
+        trans = glm::scale(trans, glm::vec3(0.2, 0.2, 0.2));
+        trans = rotation * trans;
+        trans = glm::translate(trans, shift);
+
+        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
         int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -197,36 +228,69 @@ void processInput(GLFWwindow *window)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
     {
-        if (PYRAMID == 0) PYRAMID = 2;
-        if (PYRAMID == 1) PYRAMID = 3;
+        if (PYRAMID == 0)
+            PYRAMID = 2;
+        if (PYRAMID == 1)
+            PYRAMID = 3;
     }
-    else if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE){
-        if (PYRAMID == 2) PYRAMID = 1;
-        if (PYRAMID == 3) PYRAMID = 0;
+    else if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE)
+    {
+        if (PYRAMID == 2)
+            PYRAMID = 1;
+        if (PYRAMID == 3)
+            PYRAMID = 0;
     }
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-        shapePrism.shiftVertices(0,0.02,0);
-        shapePyramid.shiftVertices(0,0.02,0);
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
+        shift.y += 0.02;
     }
-    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
-        shapePrism.shiftVertices(0,-0.02,0);
-        shapePyramid.shiftVertices(0,-0.02,0);
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+    {
+        shift.y -= 0.02;
     }
-    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-        shapePrism.shiftVertices(0.02,0,0);
-        shapePyramid.shiftVertices(0.02,0,0);
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    {
+        shift.x -= 0.02;
     }
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-        shapePrism.shiftVertices(-0.02,0,0);
-        shapePyramid.shiftVertices(-0.02,0,0);
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+    {
+        shift.x += 0.02;
     }
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-        shapePrism.shiftVertices(0,0,0.02);
-        shapePyramid.shiftVertices(0,0,0.02);
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        shift.z -= 0.02;
     }
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
-        shapePrism.shiftVertices(0,0,-0.02);
-        shapePyramid.shiftVertices(0,0,-0.02);
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    {
+        shift.z += 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        cameraPos.z -= 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        cameraPos.z += 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        cameraPos.x -= 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        cameraPos.x += 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        cameraPos.y += 0.02;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        cameraPos.y -= 0.02;   
+    }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    {
+        rotation = glm::rotate(rotation, (float)0.05, glm::vec3(1, 0, 0));
     }
 }
 
