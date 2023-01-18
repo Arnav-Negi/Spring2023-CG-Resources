@@ -17,17 +17,18 @@ public:
     unsigned int nsides;
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
-
+    glm::vec3 shift;
 
     Prism(unsigned int n)
     {
+        shift = glm::vec3(0.0, 0.0, 0.0);
         nsides = n;
         glm::vec4 point = glm::vec4(0.0f, 1.0f, 0.5f, 1.0f);
 
         glm::mat4 trans = glm::mat4(1.0f);
         float theta = 2.0 * M_PI / nsides;
         trans = glm::rotate(trans, theta, glm::vec3(0.0, 0.0, 1.0));
-        
+
         for (int i = 0; i < nsides; i++)
         {
             vertices.push_back(point.x);
@@ -64,13 +65,14 @@ public:
             indices.push_back(nsides + i + 1);
             indices.push_back(nsides + (i + 1) % nsides + 1);
         }
-        for (int i = 0; i<nsides; i++) {
+        for (int i = 0; i < nsides; i++)
+        {
             indices.push_back(i);
-            indices.push_back((i+1)%nsides);
+            indices.push_back((i + 1) % nsides);
             indices.push_back(nsides + 1 + i);
 
-            indices.push_back((i+1)%nsides);
-            indices.push_back(nsides + 1 + (i+1)%nsides);
+            indices.push_back((i + 1) % nsides);
+            indices.push_back(nsides + 1 + (i + 1) % nsides);
             indices.push_back(nsides + 1 + i);
         }
     }
@@ -85,11 +87,11 @@ public:
 
         // init the VBO
         glBindBuffer(GL_ARRAY_BUFFER, *VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(float), &vertices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
         // init the EBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
         // declare attributes
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -103,7 +105,8 @@ public:
         glBindVertexArray(0);
     }
 
-    void draw(unsigned int *VAO, unsigned int shaderProg) {
+    void draw(unsigned int *VAO, unsigned int shaderProg)
+    {
         glBindVertexArray(*VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         int vertexColorLocation = glGetUniformLocation(shaderProg, "color");
         glUniform4f(vertexColorLocation, 0.0f, 1.0f, 0.0f, 1.0f);
@@ -111,18 +114,25 @@ public:
         unsigned int transformLoc = glGetUniformLocation(shaderProg, "transform");
         glm::mat4 tilt = glm::mat4(1.0);
         tilt = glm::scale(tilt, glm::vec3(0.5, 0.5, 0.5));
-        tilt = glm::rotate(tilt, (float)(M_PI*glfwGetTime()/10), glm::vec3(1.0, 0.0, 0.0));
-        tilt = glm::rotate(tilt, (float)(M_PI*glfwGetTime()/10), glm::vec3(0.0, 1.0, 0.0));
+        tilt = glm::translate(tilt, shift);
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(tilt));
 
-        glDrawElements(GL_TRIANGLES, 6*nsides, GL_UNSIGNED_INT, (void *)0);
+        glDrawElements(GL_TRIANGLES, 6 * nsides, GL_UNSIGNED_INT, (void *)0);
         double theta;
-        for (int i = 0; i<nsides; i++) {
-            theta = 2.0*M_PI*i/nsides;
-            glUniform4f(vertexColorLocation, (1.0 + cos(theta))/2, (1.0 + sin(theta))/2, (2.0 + sin(theta) + cos(theta))/4, 1.0);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6*(nsides + i)*sizeof(GL_UNSIGNED_INT)));
+        for (int i = 0; i < nsides; i++)
+        {
+            theta = 2.0 * M_PI * i / nsides;
+            glUniform4f(vertexColorLocation, (1.0 + cos(theta)) / 2, (1.0 + sin(theta)) / 2, (2.0 + sin(theta) + cos(theta)) / 4, 1.0);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void *)(6 * (nsides + i) * sizeof(GL_UNSIGNED_INT)));
         }
         glBindVertexArray(0);
+    }
+
+    void shiftVertices(float x, float y, float z)
+    {
+        shift.x += x;
+        shift.y += y;
+        shift.z += z;
     }
 };
 
@@ -132,9 +142,11 @@ public:
     unsigned int nsides;
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
+    glm::vec3 shift;
 
     Pyramid(unsigned int n)
     {
+        shift = glm::vec3(0, 0, 0);
         nsides = n;
         glm::vec4 point = glm::vec4(0.0f, 1.0f, 0.5f, 1.0f);
 
@@ -182,11 +194,11 @@ public:
 
         // init the VBO
         glBindBuffer(GL_ARRAY_BUFFER, *VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(float), &vertices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
         // init the EBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
         // declare attributes
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -200,7 +212,8 @@ public:
         glBindVertexArray(0);
     }
 
-    void draw(unsigned int *VAO, unsigned int shaderProg) {
+    void draw(unsigned int *VAO, unsigned int shaderProg)
+    {
         glBindVertexArray(*VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         int vertexColorLocation = glGetUniformLocation(shaderProg, "color");
         glUniform4f(vertexColorLocation, 0.0f, 1.0f, 0.0f, 1.0f);
@@ -208,18 +221,25 @@ public:
         unsigned int transformLoc = glGetUniformLocation(shaderProg, "transform");
         glm::mat4 tilt = glm::mat4(1.0);
         tilt = glm::scale(tilt, glm::vec3(0.5, 0.5, 0.5));
-        tilt = glm::rotate(tilt, (float)(M_PI*glfwGetTime()/10), glm::vec3(1.0, 0.0, 0.0));
-        tilt = glm::rotate(tilt, (float)(M_PI*glfwGetTime()/10), glm::vec3(0.0, 1.0, 0.0));
+        tilt = glm::translate(tilt, shift);
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(tilt));
 
-        glDrawElements(GL_TRIANGLES, 3*nsides, GL_UNSIGNED_INT, (void *)(3*nsides*sizeof(GL_UNSIGNED_INT)));
+        glDrawElements(GL_TRIANGLES, 3 * nsides, GL_UNSIGNED_INT, (void *)(3 * nsides * sizeof(GL_UNSIGNED_INT)));
         double theta;
-        for (int i = 0; i<nsides; i++) {
-            theta = 2.0*M_PI*i/nsides;
-            glUniform4f(vertexColorLocation, (1.0 + cos(theta))/2, (1.0 + sin(theta))/2, (2.0 + sin(theta) + cos(theta))/4, 1.0);
-            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3*i*sizeof(GL_UNSIGNED_INT)));
+        for (int i = 0; i < nsides; i++)
+        {
+            theta = 2.0 * M_PI * i / nsides;
+            glUniform4f(vertexColorLocation, (1.0 + cos(theta)) / 2, (1.0 + sin(theta)) / 2, (2.0 + sin(theta) + cos(theta)) / 4, 1.0);
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void *)(3 * i * sizeof(GL_UNSIGNED_INT)));
         }
         glBindVertexArray(0);
+    }
+
+    void shiftVertices(float x, float y, float z)
+    {
+        shift.x += x;
+        shift.y += y;
+        shift.z += z;
     }
 };
 

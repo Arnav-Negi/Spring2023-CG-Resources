@@ -18,13 +18,16 @@ const unsigned int SCR_HEIGHT = 600;
 
 int PYRAMID = 0;
 
+Prism shapePrism(3);
+Pyramid shapePyramid(3);
+
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 aPos;\n"
-                                 "uniform mat4 transform;\n"
+                                 "uniform mat4 transform, view, projection;\n"
                                  "out vec4 color;\n"
                                  "void main()\n"
                                  "{\n"
-                                 "   gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+                                 "   gl_Position = projection  * transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
                                  "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
                                    "out vec4 FragColor;\n"
@@ -127,8 +130,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    Prism shapePrism = Prism((unsigned int)nsides);
-    Pyramid shapePyramid = Pyramid((unsigned int)nsides);
+    shapePrism = Prism((unsigned int)nsides);
+    shapePyramid = Pyramid((unsigned int)nsides);
 
     unsigned int VBO_Prism, VBO_Pyramid, EBO_Prism, EBO_Pyramid, VAO_Prism, VAO_Pyramid;
     shapePrism.initBuffers(&VAO_Prism, &VBO_Prism, &EBO_Prism);
@@ -137,7 +140,6 @@ int main(int argc, char **argv)
     //  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // render loop
     // -----------
-    //    glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -155,6 +157,12 @@ int main(int argc, char **argv)
 
         // draw our first triangle
         glUseProgram(shaderProgram);
+        
+        glm::mat4 projection;
+        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
+
+        int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         if (PYRAMID != 1)
             shapePrism.draw(&VAO_Prism, shaderProgram);
@@ -195,6 +203,30 @@ void processInput(GLFWwindow *window)
     else if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE){
         if (PYRAMID == 2) PYRAMID = 1;
         if (PYRAMID == 3) PYRAMID = 0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+        shapePrism.shiftVertices(0,0.02,0);
+        shapePyramid.shiftVertices(0,0.02,0);
+    }
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
+        shapePrism.shiftVertices(0,-0.02,0);
+        shapePyramid.shiftVertices(0,-0.02,0);
+    }
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+        shapePrism.shiftVertices(0.02,0,0);
+        shapePyramid.shiftVertices(0.02,0,0);
+    }
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        shapePrism.shiftVertices(-0.02,0,0);
+        shapePyramid.shiftVertices(-0.02,0,0);
+    }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+        shapePrism.shiftVertices(0,0,0.02);
+        shapePyramid.shiftVertices(0,0,0.02);
+    }
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+        shapePrism.shiftVertices(0,0,-0.02);
+        shapePyramid.shiftVertices(0,0,-0.02);
     }
 }
 
